@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# Configuring Nginx server so that /redirect_me is redirected to another page.
+onfiguring Nginx server so that /redirect_me is redirected to another page.
 
 # Update and install nginx if not already installed
 sudo apt-get -y update
@@ -8,13 +7,24 @@ sudo apt-get -y install nginx
 # Create a simple index.html file
 echo "Holberton School" | sudo tee /var/www/html/index.html
 
-# Append the redirection configuration to the existing default site configuration
-sudo bash -c 'echo "
-# Redirection from /redirect_me to another URL (https://Uri-x.com)
-location /redirect_me {
-    return 301 https://Uri-x.com;
+# Redirection configuration block
+sudo bash -c 'cat > /etc/nginx/sites-available/default << EOF
+server {
+    listen 80;
+    server_name _;
+
+    # Redirection from /redirect_me to another URL (https://Uri-x.com)
+    location /redirect_me {
+        return 301 https://Uri-x.com;
+    }
+
+    # Default configuration (optional)
+    location / {
+        root /var/www/html;
+        index index.html;
+    }
 }
-" >> /etc/nginx/sites-available/default'
+EOF'
 
 # Test the Nginx configuration to ensure no errors
 sudo nginx -t
@@ -23,4 +33,3 @@ sudo nginx -t
 sudo service nginx restart
 
 echo "Nginx is configured with redirection. You can visit /redirect_me to test the 301 redirect."
-
