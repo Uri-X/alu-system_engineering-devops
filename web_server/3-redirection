@@ -1,17 +1,27 @@
 #!/usr/bin/env bash
-# Configuring Nginx server so that /redirect_me is redirecting to another page.
+# Configuring Nginx server so that /redirect_me is redirected to another page.
 
+# Update and install nginx if not already installed
 sudo apt-get -y update
 sudo apt-get -y install nginx
 
+# Create a simple index.html file
 echo "Holberton School" | sudo tee /var/www/html/index.html
 
-# Redirection configuration
-replacement="server_name _;\\
-    location /redirect_me {\\
-        return 301 https://github.com/Uri-x/;\\
-    }"
-sudo sed -i "s|server_name _;|$replacement|" /etc/nginx/sites-available/default
+# Add the redirection location to the Nginx default configuration
+sudo bash -c 'cat << EOF >> /etc/nginx/sites-available/default
 
+# Redirection from /redirect_me to another URL (https://github.com/Uri-x/)
+location /redirect_me {
+    return 301 https://github.com/Uri-x/;
+}
+EOF'
+
+# Test the Nginx configuration to ensure no errors
 sudo nginx -t
+
+# Restart Nginx to apply the new configuration
 sudo service nginx restart
+
+echo "Nginx configured with a 301 redirect from /redirect_me to https://github.com/Uri-x/"
+
