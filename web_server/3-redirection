@@ -8,24 +8,13 @@ sudo apt-get -y install nginx
 # Create a simple index.html file
 echo "Holberton School" | sudo tee /var/www/html/index.html
 
-# Redirection configuration block
-sudo bash -c 'cat > /etc/nginx/sites-available/default << EOF
-server {
-    listen 80;
-    server_name _;
-
-    # Redirection from /redirect_me to another URL (https://Uri-x.com)
-    location /redirect_me {
-        return 301 https://Uri-x.com;
-    }
-
-    # Default configuration (optional)
-    location / {
-        root /var/www/html;
-        index index.html;
-    }
+# Append the redirection configuration to the existing default site configuration
+sudo bash -c 'echo "
+# Redirection from /redirect_me to another URL (https://Uri-x.com)
+location /redirect_me {
+    return 301 https://Uri-x.com;
 }
-EOF'
+" >> /etc/nginx/sites-available/default'
 
 # Test the Nginx configuration to ensure no errors
 sudo nginx -t
