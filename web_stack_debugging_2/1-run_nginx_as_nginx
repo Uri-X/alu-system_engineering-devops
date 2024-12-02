@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Ensure the nginx user exists
+if ! id -u nginx &>/dev/null; then
+    echo "Creating nginx user..."
+    useradd -r -s /sbin/nologin nginx
+fi
+
+# Update Nginx configuration to run as the nginx user
+echo "Configuring Nginx to run as nginx user..."
+sed -i 's/^user .*/user nginx;/' /etc/nginx/nginx.conf
+
+# Update Nginx to listen on port 8080
+echo "Configuring Nginx to listen on port 8080..."
+sed -i 's/listen\s\+80;/listen 8080;/' /etc/nginx/sites-available/default
+sed -i 's/listen\s\+80;/listen 8080;/' /etc/nginx/nginx.conf
+
+# Ensure the correct permissions for nginx
+echo "Updating permissions for nginx directories..."
+chown -R nginx:nginx /var/lib/nginx
+chown -R nginx:nginx /var/www/html
+
+# Restart Nginx service
+echo "Restarting Nginx..."
+service nginx restart
+
+# Verify Nginx is running as the nginx user
+echo "Verifying Nginx process..."
+ps aux | grep nginx
