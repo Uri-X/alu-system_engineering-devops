@@ -1,28 +1,47 @@
 #!/usr/bin/env bash
-# Ensure the nginx user exists
-if ! id -u nginx &>/dev/null; then
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Ensure the script is run with root privileges
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run this script as root."
+    exit 1
+fi
+
+# Check if the nginx user exists; if not, create it
+if ! id -u nginx > /dev/null 2>&1; then
     echo "Creating nginx user..."
     useradd -r -s /sbin/nologin nginx
 fi
 
-# Update Nginx configuration to run as the nginx user
-echo "Configuring Nginx to run as nginx user..."
-sed -i 's/^user .*/user nginx;/' /etc/nginx/nginx.conf
+# Update the nginx.conf to ensure Nginx runs as the nginx user
+if grep -q "^user " /etc/nginx/nginx.conf; then
+    sed -i 's/^user .*/user nginx;/' /etc/nginx/nginx.conf
+else
+    echo "user nginx;" >> /etc/nginx/nginx.conf
+fi
 
-# Update Nginx to listen on port 8080
-echo "Configuring Nginx to listen on port 8080..."
-sed -i 's/listen\s\+80;/listen 8080;/' /etc/nginx/sites-available/default
+# Ensure Nginx listens on port 8080 in all configurations
+if [ -f /etc/nginx/sites-available/default ]; then
+    sed -i 's/listen\s\+80;/listen 8080;/' /etc/nginx/sites-available/default
+fi
+
 sed -i 's/listen\s\+80;/listen 8080;/' /etc/nginx/nginx.conf
 
-# Ensure the correct permissions for nginx
-echo "Updating permissions for nginx directories..."
+# Change ownership of necessary directories to nginx user
+echo "Setting permissions for nginx directories..."
 chown -R nginx:nginx /var/lib/nginx
-chown -R nginx:nginx /var/www/html
+chown -R nginx:nginx /var/www/html || echo "/var/www/html not found, skipping."
 
-# Restart Nginx service
-echo "Restarting Nginx..."
+# Restart the Nginx service
+echo "Restarting Nginx service..."
 service nginx restart
 
-# Verify Nginx is running as the nginx user
-echo "Verifying Nginx process..."
-ps aux | grep nginx
+# Confirm the changes
+echo "Verifying Nginx is running as the nginx user..."
+if ! ps aux | grep -E '[n]ginx' | grep -q 'nginx'; then
+    echo "Nginx is not running as the nginx user. Please check the configuration."
+    exit 1
+fi
+
+echo "Nginx is now running as the nginx user and listening on port 8080."
