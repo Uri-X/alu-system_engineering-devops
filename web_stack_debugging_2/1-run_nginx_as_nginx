@@ -1,51 +1,6 @@
 #!/usr/bin/env bash
-# Exit immediately if a command exits with a non-zero status
-set -e
-
-# Ensure the script is run with root privileges
-if [ "$EUID" -ne 0 ]; then
-    echo "Please run this script as root."
-    exit 1
-fi
-
-# Check if the nginx user exists; if not, create it
-if ! id -u nginx > /dev/null 2>&1; then
-    echo "Creating nginx user..."
-    useradd -r -s /sbin/nologin nginx
-fi
-
-# Update nginx.conf to ensure Nginx runs as the nginx user
-if grep -q "^user " /etc/nginx/nginx.conf; then
-    sed -i 's/^user .*/user nginx;/' /etc/nginx/nginx.conf
-else
-    echo "user nginx;" >> /etc/nginx/nginx.conf
-fi
-
-# Ensure Nginx listens on port 8080 in the default site configuration
-if [ -f /etc/nginx/sites-available/default ]; then
-    sed -i 's/listen\s\+80;/listen 8080;/' /etc/nginx/sites-available/default
-fi
-
-# Ensure Nginx listens on port 8080 in nginx.conf as a fallback
-sed -i 's/listen\s\+80;/listen 8080;/' /etc/nginx/nginx.conf
-
-# Update file and directory ownership to the nginx user
-echo "Setting permissions for nginx directories..."
-chown -R nginx:nginx /var/lib/nginx
-if [ -d /var/www/html ]; then
-    chown -R nginx:nginx /var/www/html
-else
-    echo "/var/www/html not found, skipping permission update."
-fi
-
-# Restart the Nginx service
-echo "Restarting Nginx service..."
-service nginx restart
-
-# Verify Nginx is running as the nginx user
-echo "Verifying Nginx process..."
-if ! pgrep -u nginx nginx > /dev/null 2>&1; then
-    echo "Nginx is not running as the nginx user. Please check the configuration."
-    exit 1
-fi
-echo "Nginx is now running as the nginx user and listening on port 8080."
+# Configure the container to run Nginx as the nginx user.
+sudo chmod -R 755 /etc/nginx/
+sed -i "s/80/8080/g" /etc/nginx/sites-available/default
+pkill apache2
+su nginx -c "service nginx restart"
